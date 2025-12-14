@@ -176,7 +176,7 @@ $conn->close();
 
             <td<?= $lowStock ? ' class="low-stock"' : '' ?>>
                 <?= htmlspecialchars($antal) ?>
-                <?php if ($lowStock): ?> ⚠ <?php endif; ?>
+                <?php if ($lowStock): ?> ! <?php endif; ?>
             </td>
 
             <td><?= $p['minimum_aantal'] ?></td>
@@ -217,3 +217,4 @@ $conn->close();
 </table>
 </body>
 </html>
+
