@@ -127,7 +127,14 @@ $conn->close();
     <input type="number" name="minimum_aantal" placeholder="Minimum Aantal" required />
     <input type="number" step="0.01" name="inkoopprijs" placeholder="Inkoopprijs (€)" required />
     <input type="number" step="0.01" name="verkoopsprijs" placeholder="Verkoopsprijs (€)" required />
-    <input type="text" name="locatie" placeholder="Locatie" required />
+    
+    <select name="locatie" required>
+    <option value="">Select locatie</option>
+    <option value="Rotterdam">Rotterdam</option>
+    <option value="Eindhoven">Eindhoven</option>
+    <option value="Almere">Almere</option>
+    </select>
+
 
     <button type="submit" name="add_product" value="1">Add Product</button>
 </form>
@@ -218,3 +225,4 @@ $conn->close();
 </table>
 </body>
 </html>
+
