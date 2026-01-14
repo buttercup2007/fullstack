@@ -40,16 +40,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)
         ");
 
-        $stmt->bind_param("ssiiids", 
-            $product_type, 
-            $fabriek, 
-            $aantal, 
-            $inkoopprijs, 
-            $verkoopsprijs, 
-            $locatie,
-            $minimum_aantal,
-           
+        $stmt->bind_param(
+            "ssiddsi",
+            $product_type,  
+            $fabriek,          
+            $aantal,           
+            $inkoopprijs,     
+            $verkoopsprijs,    
+            $locatie,         
+            $minimum_aantal    
         );
+        
 
         if ($stmt->execute()) {
             header("Location: voorraad.php");
@@ -217,4 +218,3 @@ $conn->close();
 </table>
 </body>
 </html>
-
