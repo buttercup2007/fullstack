@@ -20,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
-
     $product_type = $_POST['product_type'] ?? '';
     $fabriek = $_POST['fabriek'] ?? '';
     $locatie = $_POST['locatie'] ?? '';
@@ -39,11 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
         $check_product->close();
 
         if (!$found_product) {
-        
-            $stmt = $conn->prepare("
-                INSERT INTO product (product_type, fabriek, minimum_aantal, inkoopprijs, verkoopsprijs)
-                VALUES (?, ?, ?, ?, ?)
-            ");
+            $stmt = $conn->prepare("INSERT INTO product (product_type, fabriek, minimum_aantal, inkoopprijs, verkoopsprijs) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param("ssidd", $product_type, $fabriek, $minimum_aantal, $inkoopprijs, $verkoopsprijs);
             $stmt->execute();
             $product_id = $conn->insert_id;
@@ -115,7 +110,7 @@ if (!empty($filter_name)) $sql .= " AND p.product_type LIKE '%" . $conn->real_es
 if (!empty($filter_fabriek)) $sql .= " AND p.fabriek LIKE '%" . $conn->real_escape_string($filter_fabriek) . "%'";
 if (!empty($filter_locatie)) $sql .= " AND l.naam LIKE '%" . $conn->real_escape_string($filter_locatie) . "%'";
 
-$sql .= " GROUP BY p.product_id ORDER BY p.product_id DESC";
+$sql .= " GROUP BY p.product_id HAVING totaal_aantal > 0 ORDER BY p.product_id DESC";
 
 $result = $conn->query($sql);
 $products = [];
@@ -132,18 +127,20 @@ $conn->close();
 <link rel="stylesheet" href="voorraad.css">
 <style>
 .product-item { display: inline-block; padding:10px; border:1px solid #ccc; border-radius:6px; position:relative; min-width:120px; text-align:center; margin:5px;}
-.stock-badge { position:absolute; top:-5px; left:-5px; background:red; color:white; font-size:12px; font-weight:bold; padding:3px 6px; border-radius:50%;}
+.stock-badge { position:absolute; top:-5px; left:-5px; background:red; color:white; font-size:12px; font-weight:bold; padding:3px 6px; border-radius:50%; }
 .low-stock { background-color:#ffe0e0; }
 label { font-weight:bold; display:block; margin-bottom:2px; }
 input, select, button { padding:5px; margin-right:10px; }
 form.add-product { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px; }
+#buyModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+#buyModal div { background:#fff; padding:20px; border-radius:8px; text-align:center; min-width:200px; }
+#buyModal button { margin:5px; padding:5px 10px; }
 </style>
 </head>
 <body>
 
 <div class="top-bar">
     <a href="voorraad.php">Producten</a>
-    <a href="voorraadLocatie.php">Locaties</a>
     <a href="koop.php">Koop</a>
 </div>
 
@@ -155,32 +152,13 @@ form.add-product { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px;
 <?php endif; ?>
 
 <form method="POST" class="add-product">
-    <div>
-        <label>Product Type:</label>
-        <input type="text" name="product_type" placeholder="4-in-1 Schuurmachine" required />
-    </div>
-    <div>
-        <label>Fabriek:</label>
-        <input type="text" name="fabriek" placeholder="Black & Decker" required />
-    </div>
-    <div>
-        <label>Aantal:</label>
-        <input type="number" name="aantal" placeholder="1" value="1" min="1" required />
-    </div>
-    <div>
-        <label>Minimum Aantal:</label>
-        <input type="number" name="minimum_aantal" placeholder="0" value="0" min="0" required />
-    </div>
-    <div>
-        <label>Inkoopprijs (€):</label>
-        <input type="number" step="0.01" name="inkoopprijs" placeholder="55.00" value="0" required />
-    </div>
-    <div>
-        <label>Verkoopsprijs (€):</label>
-        <input type="number" step="0.01" name="verkoopsprijs" placeholder="67.95" value="0" required />
-    </div>
-    <div>
-        <label>Locatie:</label>
+    <div><label>Product Type:</label><input type="text" name="product_type" required /></div>
+    <div><label>Fabriek:</label><input type="text" name="fabriek" required /></div>
+    <div><label>Aantal:</label><input type="number" name="aantal" value="1" min="1" required /></div>
+    <div><label>Minimum Aantal:</label><input type="number" name="minimum_aantal" value="0" min="0" required /></div>
+    <div><label>Inkoopprijs (€):</label><input type="number" step="0.01" name="inkoopprijs" value="0" required /></div>
+    <div><label>Verkoopsprijs (€):</label><input type="number" step="0.01" name="verkoopsprijs" value="0" required /></div>
+    <div><label>Locatie:</label>
         <select name="locatie" required>
             <option value="">Select locatie</option>
             <option value="Rotterdam">Rotterdam</option>
@@ -188,26 +166,15 @@ form.add-product { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px;
             <option value="Almere">Almere</option>
         </select>
     </div>
-    <div>
-        <button type="submit" name="add_product">Add Product</button>
-    </div>
+    <div><button type="submit" name="add_product">Add Product</button></div>
 </form>
 
 <h2>Product List</h2>
 <table>
 <thead>
 <tr>
-<th>ID</th>
-<th>Product Type</th>
-<th>Fabriek</th>
-<th>Aantal</th>
-<th>Minimum</th>
-<th>Inkoopprijs</th>
-<th>Verkoopsprijs</th>
-<th>Locatie(s)</th>
-<th>Delete</th>
-<th>Edit</th>
-<th>Buy</th>
+<th>ID</th><th>Product Type</th><th>Fabriek</th><th>Aantal</th><th>Minimum</th><th>Inkoopprijs</th>
+<th>Verkoopsprijs</th><th>Locatie(s)</th><th>Delete</th><th>Edit</th><th>Buy</th>
 </tr>
 </thead>
 <tbody>
@@ -215,17 +182,11 @@ form.add-product { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px;
 <?php foreach ($products as $p): ?>
 <tr>
 <td><?= $p['product_id'] ?></td>
-<td>
-<div class="product-item">
-<?= htmlspecialchars($p['product_type']) ?>
-<?php if ((int)$p['totaal_aantal'] > 0): ?>
-<span class="stock-badge"><?= (int)$p['totaal_aantal'] ?></span>
-<?php endif; ?>
-</div>
-</td>
+<td><div class="product-item"><?= htmlspecialchars($p['product_type']) ?>
+<?php if ((int)$p['totaal_aantal'] > 0): ?><span class="stock-badge"><?= (int)$p['totaal_aantal'] ?></span><?php endif; ?>
+</div></td>
 <td><?= htmlspecialchars($p['fabriek']) ?></td>
-<td<?= ((int)$p['totaal_aantal'] <= (int)$p['minimum_aantal']) ? ' class="low-stock"' : '' ?>>
-<?= (int)$p['totaal_aantal'] ?></td>
+<td<?= ((int)$p['totaal_aantal'] <= (int)$p['minimum_aantal']) ? ' class="low-stock"' : '' ?>><?= (int)$p['totaal_aantal'] ?></td>
 <td><?= (int)$p['minimum_aantal'] ?></td>
 <td>€<?= number_format($p['inkoopprijs'],2) ?></td>
 <td>€<?= number_format($p['verkoopsprijs'],2) ?></td>
@@ -241,8 +202,10 @@ form.add-product { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px;
 </form>
 </td>
 <td>
-<form method="GET" action="koop.php" style="margin:0;">
-<button type="submit" name="id" value="<?= $p['product_id'] ?>">Buy</button>
+<form method="POST" action="koop.php" class="buy-form">
+    <input type="hidden" name="product_id" value="<?= $p['product_id'] ?>">
+    <input type="hidden" name="buy_quantity" value="1">
+    <button type="button" class="buy-button" data-quantity="<?= $p['totaal_aantal'] ?>">Buy</button>
 </form>
 </td>
 </tr>
@@ -252,6 +215,43 @@ form.add-product { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px;
 <?php endif; ?>
 </tbody>
 </table>
+
+<div id="buyModal">
+  <div>
+    <p>Do you want to buy 1 or all of this product?</p>
+    <button id="buyOne">Buy 1</button>
+    <button id="buyAll">Buy All</button>
+    <button id="cancelBuy">Cancel</button>
+  </div>
+</div>
+
+<script>
+const modal = document.getElementById('buyModal');
+let currentForm = null;
+let totalQuantity = 1;
+
+document.querySelectorAll('.buy-button').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentForm = this.closest('.buy-form');
+        totalQuantity = parseInt(this.dataset.quantity);
+        modal.style.display = 'flex';
+    });
+});
+
+document.getElementById('buyOne').addEventListener('click', function() {
+    currentForm.querySelector('input[name="buy_quantity"]').value = 1;
+    currentForm.submit();
+});
+
+document.getElementById('buyAll').addEventListener('click', function() {
+    currentForm.querySelector('input[name="buy_quantity"]').value = totalQuantity;
+    currentForm.submit();
+});
+
+document.getElementById('cancelBuy').addEventListener('click', function() {
+    modal.style.display = 'none';
+});
+</script>
 
 </body>
 </html>
